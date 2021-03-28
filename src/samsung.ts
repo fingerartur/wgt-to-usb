@@ -1,16 +1,22 @@
+import fetch, { Response } from 'node-fetch'
+import fs from 'fs'
+import FormData from 'form-data'
 import {
   getSessionId, parseNodeFetchCookies, downloadFile, Cookie, cookiesToString,
 } from './utils'
 
-const fs = require('fs')
-const fetch = require('node-fetch')
-const FormData = require('form-data')
-
 export async function getSamsungUsbToolCookies() {
   const uri = 'https://appsign.samsungqbe.com:8080/'
-  console.log(`Collecting cookies from USB Demo packaging tool ${uri}`)
+  console.log(`Collecting cookies from USB Demo packaging tool ${uri}...`)
 
-  const response = await fetch(uri)
+  let response: Response
+
+  try {
+    response = await fetch(uri)
+  } catch (error) {
+    throw new Error('Failed to fetch cookies (request failed)')
+  }
+
   const cookies = parseNodeFetchCookies(response.headers.raw()['set-cookie'])
   const sessionId = getSessionId(cookies)
 
@@ -22,6 +28,8 @@ export async function getSamsungUsbToolCookies() {
     cookies,
     sessionId,
   }
+
+  console.log('Cookies collected successfully.')
 
   return result
 }
@@ -50,7 +58,7 @@ function parseWgtFileUploadResponse(response: string) {
 
 export async function uploadWgtFile(wgtFile: string, sessionId: string, cookies: Cookie[]) {
   const uri = 'https://appsign.samsungqbe.com:8080/uploadAjax.php'
-  console.log(`Uploading ${wgtFile} to ${uri}`)
+  console.log(`Uploading ${wgtFile} to ${uri}...`)
 
   const form = new FormData()
   form.append('sId', sessionId)
@@ -59,31 +67,40 @@ export async function uploadWgtFile(wgtFile: string, sessionId: string, cookies:
     fs.createReadStream(wgtFile),
   )
 
-  // This request does not correspond to original browser request one-to-one,
-  // some headers are left out because for some reason they cause a `failUpload` response
-  const response = await fetch(uri, {
-    method: 'post',
-    body: form,
-    headers: {
-      origin: 'https://appsign.samsungqbe.com:8080',
-      referer: 'https://appsign.samsungqbe.com:8080/',
-      cookie: cookiesToString(cookies),
-    },
-  })
+  let response: Response
+
+  try {
+    // This request does not correspond to original browser request one-to-one,
+    // some headers are left out because for some reason they cause a `failUpload` response
+    response = await fetch(uri, {
+      method: 'post',
+      body: form,
+      headers: {
+        origin: 'https://appsign.samsungqbe.com:8080',
+        referer: 'https://appsign.samsungqbe.com:8080/',
+        cookie: cookiesToString(cookies),
+      },
+    })
+  } catch (error) {
+    throw new Error('Failed to upload .wgt file (request failed)')
+  }
 
   const responseText = await response.text()
-
   const { error } = parseWgtFileUploadResponse(responseText)
 
   if (error) {
     throw new Error(error)
   }
 
-  console.log('Upload successful')
+  console.log('Upload successful.')
+}
+
+export function getOutputDir(path: string | null) {
+  return `${path ?? '.'}/userwidget`
 }
 
 export async function downloadUsbFiles(dir: string | null, cookies: Cookie[]) {
-  const outputDir = dir ? `${dir}/userwidget` : 'userwidget'
+  const outputDir = getOutputDir(dir)
 
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true })
@@ -117,5 +134,5 @@ export async function downloadUsbFiles(dir: string | null, cookies: Cookie[]) {
     headers,
   )
 
-  console.info(`USB files successfully downloaded to ${outputDir}`)
+  console.info(`USB files successfully downloaded to ${outputDir}.`)
 }

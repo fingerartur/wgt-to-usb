@@ -1,6 +1,7 @@
-const fs = require('fs')
-const yargs = require('yargs/yargs')
-const { hideBin } = require('yargs/helpers')
+import fs from 'fs'
+import yargs from 'yargs/yargs'
+import { hideBin } from 'yargs/helpers'
+import { getOutputDir } from './samsung'
 
 function validateFilePaths(filePaths: string[]) {
   const file = filePaths[0]
@@ -18,6 +19,16 @@ function validateFilePaths(filePaths: string[]) {
   }
 }
 
+function validateOutputPath(path: string | null) {
+  const outputDir = getOutputDir(path)
+
+  if (fs.existsSync(outputDir)) {
+    throw new Error(`${outputDir} already exists`)
+  }
+
+  return true
+}
+
 export function getArgs() {
   const { argv } = yargs(hideBin(process.argv))
     .usage('wgt-to-usb [file.wgt]')
@@ -27,8 +38,8 @@ export function getArgs() {
       description: 'Output directory',
     })
     .check((argv: any) => {
-      const filePaths = argv._
-      return validateFilePaths(filePaths)
+      const { _: filePaths, o } = argv
+      return validateFilePaths(filePaths) && validateOutputPath(o)
     })
     .help('help')
 

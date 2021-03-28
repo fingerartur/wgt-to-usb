@@ -1,6 +1,6 @@
-const fs = require('fs')
-const fetch = require('node-fetch')
-const streamToPromise = require('stream-to-promise')
+import fs from 'fs'
+import fetch, { Response, HeadersInit } from 'node-fetch'
+import streamToPromise from 'stream-to-promise'
 
 export interface Cookie {
     name: string
@@ -28,12 +28,27 @@ export function cookiesToString(cookies: Cookie[]) {
   return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ')
 }
 
-export async function downloadFile(uri: string, name: string, headers: Object) {
-  console.log(`Downloading ${uri} as ${name}`)
+export async function downloadFile(uri: string, name: string, headers: HeadersInit) {
+  console.log(`Downloading ${uri} as ${name}...`)
 
   const outputFile = fs.createWriteStream(name)
-  const response = await fetch(uri, { headers })
+
+  outputFile.on('error', (error) => {
+    outputFile.end()
+    throw error
+  })
+
+  let response: Response
+
+  try {
+    response = await fetch(uri, { headers })
+  } catch (error) {
+    throw new Error('Failed to download file (request failed)')
+  }
+
   response.body.pipe(outputFile)
 
-  return streamToPromise(outputFile) as Promise<void>
+  await streamToPromise(outputFile)
+
+  console.log('Download successful.')
 }
