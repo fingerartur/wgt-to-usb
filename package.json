@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "CLI script to create Tizen USB demo package from a .wgt file",
   "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fingerartur/wgt-to-usb.git"
+  },
   "bin": {
     "wgt-to-usb": "build/index.js"
   },
