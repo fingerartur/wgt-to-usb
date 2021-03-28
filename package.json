@@ -1,6 +1,6 @@
 {
   "name": "wgt-to-usb",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "CLI script to create Tizen USB demo package from a .wgt file",
   "main": "src/index.ts",
   "repository": {
@@ -11,7 +11,8 @@
     "wgt-to-usb": "build/index.js"
   },
   "scripts": {
-    "build": "rm -rf build && npx tsc"
+    "build": "rm -rf build && npx tsc",
+    "prepare": "npm run build"
   },
   "author": "Artur Finger",
   "license": "ISC",

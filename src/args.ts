@@ -44,7 +44,7 @@ export function getArgs() {
     .help('help')
 
   return {
-    outputPath: argv.o,
-    wgtFile: argv._[0],
+    outputPath: argv.o as string | null,
+    wgtFile: argv._[0] as string,
   }
 }
